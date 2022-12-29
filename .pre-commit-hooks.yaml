@@ -4,5 +4,5 @@
   language: golang
   types_or: [objective-c,objective-c++,swift,swiftdeps,java,go]
   description: Analyze and update header for copyright and licensing
-  args : [--arr]
+  args : [--license,arr]
   pass_filenames: true
