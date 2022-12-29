@@ -1,0 +1,8 @@
+- id: header_check
+  name: header_check
+  entry: header_check
+  language: golang
+  types_or: [objective-c,objective-c++,swift,swiftdeps,java,golang]
+  description: Analyze and update header for copyright and licensing
+  args : [--arr]
+  pass_filenames: true
