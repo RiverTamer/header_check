@@ -10,12 +10,14 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	log "github.com/sirupsen/logrus"
 	"io"
 	"os"
 	"path"
 	"regexp"
 	"strings"
+	"time"
 )
 
 func analyzeFile(filePath string, license string) bool {
@@ -125,7 +127,9 @@ func analyzeFile(filePath string, license string) bool {
 	// 4 digit year or range between a pair of 4 digit years
 	// license indicator
 	lineIndex++
-	pattern = "^//  Copyright (\\d{4}-){0,1}2022 Karl Kraft. " + license + "(\\.){0,1}$"
+	year, _, _ := time.Now().Date()
+	formattedYear := fmt.Sprintf("%04d", year)
+	pattern = "^//  Copyright (\\d{4}-){0,1}" + formattedYear + " Karl Kraft. " + license + "(\\.){0,1}$"
 	r, _ = regexp.Compile(pattern)
 	if !r.MatchString(lines[lineIndex]) {
 		if !fileReported {
