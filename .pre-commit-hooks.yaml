@@ -2,7 +2,7 @@
   name: header_check
   entry: header_check
   language: golang
-  types_or: [objective-c,objective-c++,swift,swiftdeps,java,go]
+  types_or: [objective-c,objective-c++,swift,swiftdeps,java,go,c]
   description: Analyze and update header for copyright and licensing
   args : [--license,arr]
   pass_filenames: true
