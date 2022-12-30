@@ -29,13 +29,13 @@ func analyzeFile(filePath string, license string) bool {
 	defer file.Close()
 
 	buffer := make([]byte, 1024)
-	nread, err := file.Read(buffer)
+	numberRead, err := file.Read(buffer)
 	if err != nil && err != io.EOF {
 		log.Errorf("Could not open for reading: %s", filePath)
 		log.Fatal(err)
 	}
 
-	if nread == 0 {
+	if numberRead == 0 {
 		log.Warningf("%s", filePath)
 		log.Warningf(">> File is empty")
 		return true
