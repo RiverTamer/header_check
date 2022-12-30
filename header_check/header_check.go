@@ -22,6 +22,8 @@ import (
 
 func analyzeFile(filePath string, license string) bool {
 
+	basename := path.Base(filePath)
+
 	file, err := os.Open(filePath)
 	if err != nil {
 		log.Fatal(err)
@@ -43,7 +45,14 @@ func analyzeFile(filePath string, license string) bool {
 
 	lines := strings.Split(string(buffer), "\n")
 
-	if len(lines) < 7 {
+	lineIndex := 0
+	minLines := 7
+
+	if basename == "Package.swift" {
+		minLines = minLines + 2
+		lineIndex = lineIndex + 2
+	}
+	if len(lines) < minLines {
 		log.Warningf("%s", filePath)
 		log.Warningf(">> Less than seven lines in source file")
 		return true
@@ -51,7 +60,6 @@ func analyzeFile(filePath string, license string) bool {
 
 	var fileReported bool
 	var target string
-	var lineIndex = 0
 
 	// 0 - blank line
 	target = "//"
@@ -67,7 +75,7 @@ func analyzeFile(filePath string, license string) bool {
 
 	// 1 - name of file
 	lineIndex++
-	target = "//  " + path.Base(filePath)
+	target = "//  " + basename
 	if lines[lineIndex] != target {
 		if !fileReported {
 			log.Warningf("%s", filePath)
