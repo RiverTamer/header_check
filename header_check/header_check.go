@@ -20,6 +20,22 @@ import (
 	"time"
 )
 
+func allowedTargetNames(filePath string) []string {
+	cwd, _ := os.Getwd()
+	parent := path.Dir(filePath)
+	if parent == cwd || parent == "." {
+		a := []string{path.Base(cwd)}
+		return a
+	}
+	gitCheck := parent + "/.git"
+	if _, err := os.Stat(gitCheck); err == nil {
+		a := []string{path.Base(parent)}
+		return a
+	}
+	a := []string{path.Base(parent)}
+	return append(a, allowedTargetNames(parent)...)
+}
+
 func analyzeFile(filePath string, license string) bool {
 
 	basename := path.Base(filePath)
@@ -86,18 +102,27 @@ func analyzeFile(filePath string, license string) bool {
 		log.Warningf("+ %s", target)
 	}
 
-	// 2 - project name
+	// 2 - target name
 	lineIndex++
-	cwd, _ := os.Getwd()
-	target = "//  " + path.Base(cwd)
-	if lines[lineIndex] != target {
+
+	var foundTargetName = false
+	for _, aTargetName := range allowedTargetNames(filePath) {
+		target = "//  " + aTargetName
+		if lines[lineIndex] == target {
+			foundTargetName = true
+			break
+		}
+	}
+	if !foundTargetName {
 		if !fileReported {
 			log.Warningf("%s", filePath)
 			fileReported = true
 		}
 		log.Warningf("at line %d", lineIndex)
 		log.Warningf("- %s", lines[lineIndex])
-		log.Warningf("+ %s", target)
+		for _, aTargetName := range allowedTargetNames(filePath) {
+			log.Warningf("+ %s", aTargetName)
+		}
 	}
 
 	// 3 - blank line
