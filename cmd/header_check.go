@@ -3,7 +3,7 @@
 //  header_check
 //
 //  Created by Karl Kraft on 12/29/2022
-//  Copyright 2022 Karl Kraft. All rights reserved.
+//  Copyright 2022-2023 Karl Kraft. All rights reserved.
 //
 
 package main
