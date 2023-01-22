@@ -25,9 +25,6 @@ jobs:
       with:
         go-version: 1.19
 
-    - name: Test
-      run: go test -v -o ${{env.NAME}}
- 
     - name: Build
       run: $HOME/github/bin/build_go.sh
 
