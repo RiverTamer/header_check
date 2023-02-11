@@ -204,6 +204,7 @@ func analyzeFile(filePath string, license string) bool {
 }
 
 func main() {
+	log.Printf("Startup %s(%s) Built: %s", version, revision, builtDate)
 	license := flag.String("license", "arr", "License mode (arr,apache)")
 	flag.Parse()
 	log.Infof("License is set to %s", *license)
