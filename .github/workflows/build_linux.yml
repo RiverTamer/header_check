@@ -3,7 +3,6 @@ name: linux GO build
 on:
   workflow_dispatch:
   push:
-  pull_request:
 
 jobs:
 
