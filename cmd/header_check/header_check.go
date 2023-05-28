@@ -11,6 +11,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"github.com/go-git/go-git/v5"
 	log "github.com/sirupsen/logrus"
 	"io"
 	"os"
@@ -23,13 +24,22 @@ import (
 func allowedTargetNames(filePath string) []string {
 	cwd, _ := os.Getwd()
 	parent := path.Dir(filePath)
-	if parent == cwd || parent == "." {
-		a := []string{path.Base(cwd)}
-		return a
-	}
 	gitCheck := parent + "/.git"
 	if _, err := os.Stat(gitCheck); err == nil {
 		a := []string{path.Base(parent)}
+		r, err := git.PlainOpen(parent)
+		if err != nil {
+			log.Errorf("xxxx")
+		}
+		c, err := r.Config()
+		for _, urlString := range c.Remotes["origin"].URLs {
+			split := strings.Split(urlString, "/")
+			return append(a, split[len(split)-1])
+		}
+		return a
+	}
+	if parent == cwd || parent == "." {
+		a := []string{path.Base(cwd)}
 		return a
 	}
 	a := []string{path.Base(parent)}
