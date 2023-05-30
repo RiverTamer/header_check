@@ -1,6 +1,8 @@
 name: linux GO build
 
 on:
+  schedule:
+      - cron: '33 08 * * 6'   # Every Saturday
   workflow_dispatch:
   push:
 

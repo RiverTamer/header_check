@@ -2,6 +2,8 @@ name: macOS GO build
 
 
 on:
+  schedule:
+      - cron: '34 08 * * 6'   # Every Saturday
   workflow_dispatch:
   push:
 
