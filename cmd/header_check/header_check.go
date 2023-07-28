@@ -32,13 +32,15 @@ func allowedTargetNames(filePath string) []string {
 			log.Errorf("xxxx")
 		}
 		c, err := r.Config()
-		for _, urlString := range c.Remotes["origin"].URLs {
-			split := strings.Split(urlString, "/")
-			lastPath := split[len(split)-1]
-			if strings.HasSuffix(lastPath, ".git") {
-				lastPath = lastPath[0 : len(lastPath)-4]
+		if c.Remotes["origin"] != nil {
+			for _, urlString := range c.Remotes["origin"].URLs {
+				split := strings.Split(urlString, "/")
+				lastPath := split[len(split)-1]
+				if strings.HasSuffix(lastPath, ".git") {
+					lastPath = lastPath[0 : len(lastPath)-4]
+				}
+				return append(a, lastPath)
 			}
-			return append(a, lastPath)
 		}
 		return a
 	}
