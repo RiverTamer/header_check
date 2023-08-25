@@ -4,7 +4,7 @@ This program replaces the pre-commit SVN hook that was used in the olden days fo
 It is used with the [pre-commit](https://pre-commit.com) software package.
 
 ## Basics of Usage
-###Run once per machine (macOS).  
+### Run once per machine (macOS).  
 ```bash
 brew install pre-commit
 ```
@@ -16,7 +16,7 @@ python3 get-pip.py --user
 pip install pre-commit
 ```
 
-###Configure once per repo
+### Configure once per repo
 
 In root of repo create file  `.pre-commit-config.yaml`.  There are [hundreds of supported hooks](https://pre-commit.com/hooks.html).  This just lists the most common ones used across all projects.  If creating a new repo you may want to look at other repos for other hooks to add.
 
