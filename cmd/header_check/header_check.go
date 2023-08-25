@@ -29,10 +29,11 @@ func allowedTargetNames(filePath string) []string {
 		a := []string{path.Base(parent)}
 		r, err := git.PlainOpen(parent)
 		if err != nil {
-			log.Errorf("xxxx")
+			log.Errorf("Could not open local git respository")
+			return a
 		}
 		c, err := r.Config()
-		if c.Remotes["origin"] != nil {
+		if c.Remotes != nil && c.Remotes["origin"] != nil {
 			for _, urlString := range c.Remotes["origin"].URLs {
 				split := strings.Split(urlString, "/")
 				lastPath := split[len(split)-1]
