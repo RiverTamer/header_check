@@ -9,6 +9,7 @@
 package main
 
 import (
+	"bufio"
 	"flag"
 	"fmt"
 	"github.com/go-git/go-git/v5"
@@ -53,7 +54,7 @@ func allowedTargetNames(filePath string) []string {
 	return append(a, allowedTargetNames(parent)...)
 }
 
-func analyzeFile(filePath string, license string) bool {
+func analyzeFile(filePath string, license string, autodate bool) bool {
 
 	basename := path.Base(filePath)
 
@@ -177,18 +178,16 @@ func analyzeFile(filePath string, license string) bool {
 	// 4 digit year or range between a pair of 4 digit years
 	// license indicator
 	lineIndex++
-	year, _, _ := time.Now().Date()
-	formattedYear := fmt.Sprintf("%04d", year)
-	pattern = "^//  Copyright (\\d{4}-){0,1}" + formattedYear + " Karl Kraft. " + license + "(\\.){0,1}$"
-	r, _ = regexp.Compile(pattern)
-	if !r.MatchString(lines[lineIndex]) {
+	copyrightLine := lines[lineIndex]
+	validCopyright, correctedLine := isCopyrightValid(copyrightLine, license)
+	if validCopyright != Correct {
 		if !fileReported {
 			log.Warningf("%s", filePath)
 			fileReported = true
 		}
 		log.Warningf("at line %d", lineIndex)
 		log.Warningf("- %s", lines[lineIndex])
-		log.Warningf("+ %s", pattern)
+		log.Warningf("+ %s", correctedLine)
 	}
 
 	// 6 - blank line
@@ -217,12 +216,114 @@ func analyzeFile(filePath string, license string) bool {
 		log.Warningf("+ %s", target)
 	}
 
+	if autodate && validCopyright == Expired {
+		rewriteFileWithCopyright(filePath, copyrightLine, correctedLine)
+	}
+
 	return fileReported
+}
+
+func rewriteFileWithCopyright(filePath string, expiredLine string, replaceLine string) {
+	expiredLine = expiredLine + "\n"
+	replaceLine = replaceLine + "\n"
+	dir := path.Dir(filePath)
+	output, err := os.CreateTemp(dir, "_header_check_*.tmp")
+	if err != nil {
+		log.Errorf("Could not create temp file for updating dates")
+		return
+	}
+	f, err := os.Open(filePath)
+	if err != nil {
+		log.Errorf("Could not open " + filePath + " for reading")
+		return
+	}
+
+	reader := bufio.NewReader(f)
+	for {
+		aLine, err := reader.ReadString('\n')
+		if err == io.EOF {
+			break
+		} else if err != nil {
+			log.Errorf("Error reading  " + filePath)
+			return
+
+		}
+		if aLine == expiredLine {
+			_, err := output.WriteString(replaceLine)
+			if err != nil {
+				log.Errorf("Error writing replacement date line")
+				return
+			}
+		} else {
+			_, err := output.WriteString(aLine)
+			if err != nil {
+				log.Errorf("Error writing source code while fixing date")
+				return
+			}
+		}
+	}
+	err = output.Close()
+	if err != nil {
+		log.Errorf("Could not close temp output file")
+		return
+	}
+	err = f.Close()
+	if err != nil {
+		log.Errorf("Could not close source file")
+		return
+	}
+	err = os.Rename(output.Name(), filePath)
+	if err != nil {
+		log.Errorf("Could not rename tempt to source file")
+		return
+	}
+}
+
+type CopyrightStatus int
+
+const (
+	Correct CopyrightStatus = iota
+	Expired
+	Invalid
+)
+
+func isCopyrightValid(theLine string, license string) (CopyrightStatus, string) {
+	year, _, _ := time.Now().Date()
+	formattedYear := fmt.Sprintf("%04d", year)
+	singleYearCorrectPattern := "^//  Copyright " + formattedYear + " Karl Kraft. " + license + "(\\.){0,1}$"
+	singleYearExpiredPattern := "^//  Copyright (\\d{4}) Karl Kraft. " + license + "(\\.){0,1}$"
+	rangeCorrectPattern := "^//  Copyright \\d{4}-" + formattedYear + " Karl Kraft. " + license + "(\\.){0,1}$"
+	rangeExpiredPattern := "^//  Copyright (\\d{4})-\\d{4} Karl Kraft. " + license + "(\\.){0,1}$"
+
+	r, _ := regexp.Compile(singleYearCorrectPattern)
+	if r.MatchString(theLine) {
+		return Correct, ""
+	}
+	r, _ = regexp.Compile(rangeCorrectPattern)
+	if r.MatchString(theLine) {
+		return Correct, ""
+	}
+	r, _ = regexp.Compile(singleYearExpiredPattern)
+	if r.MatchString(theLine) {
+		matches := r.FindStringSubmatch(theLine)
+		return Expired, "//  Copyright " + matches[1] + "-" + formattedYear + " Karl Kraft. " + license
+	}
+	r, _ = regexp.Compile(rangeExpiredPattern)
+	if r.MatchString(theLine) {
+		matches := r.FindStringSubmatch(theLine)
+		return Expired, "//  Copyright " + matches[1] + "-" + formattedYear + " Karl Kraft. " + license
+	}
+
+	return Invalid, "//  Copyright " + formattedYear + " Karl Kraft. " + license
+
 }
 
 func main() {
 	log.Printf("Startup %s(%s) Built: %s", version, revision, builtDate)
 	license := flag.String("license", "arr", "License mode (arr,apache)")
+	autodate := flag.Bool("autodate", false, "Auto update copyright lines")
+	infoplist := flag.Bool("infoplist", false, "Scan for Info.plist")
+
 	flag.Parse()
 	log.Infof("License is set to %s", *license)
 	var failed bool
@@ -233,7 +334,10 @@ func main() {
 	}
 	for _, s := range flag.Args() {
 		log.Infof("Reading %s", s)
-		failed = analyzeFile(s, licenseString) || failed
+		failed = analyzeFile(s, licenseString, *autodate) || failed
+	}
+	if *infoplist {
+		// scan and maybe update
 	}
 	if failed {
 		os.Exit(-1)
