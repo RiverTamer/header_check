@@ -3,7 +3,7 @@
 //  header_check
 //
 //  Created by Karl Kraft on 12/29/2022
-//  Copyright 2022-2023 Karl Kraft. All rights reserved.
+//  Copyright 2022-2024 Karl Kraft. All rights reserved
 //
 
 package main
@@ -319,13 +319,13 @@ func isCopyrightValid(theLine string, license string) (CopyrightStatus, string) 
 }
 
 func main() {
-	log.Printf("Startup %s(%s) Built: %s", version, revision, builtDate)
+	//log.Printf("Startup %s(%s) Built: %s", version, revision, builtDate)
 	license := flag.String("license", "arr", "License mode (arr,apache)")
 	autodate := flag.Bool("autodate", false, "Auto update copyright lines")
 	infoplist := flag.Bool("infoplist", false, "Scan for Info.plist")
 
 	flag.Parse()
-	log.Infof("License is set to %s", *license)
+	//log.Infof("License is set to %s", *license)
 	var failed bool
 	var licenseString = "All rights reserved"
 
@@ -333,7 +333,7 @@ func main() {
 		licenseString = "Licensed under Apache License, Version 2.0"
 	}
 	for _, s := range flag.Args() {
-		log.Infof("Reading %s", s)
+		//log.Infof("Reading %s", s)
 		failed = analyzeFile(s, licenseString, *autodate) || failed
 	}
 	if *infoplist {
