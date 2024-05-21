@@ -4,8 +4,14 @@ name: Build GO CLI
 on:                          # yamllint disable-line rule:truthy
   schedule:
     - cron: '34 08 * * 6'
+
   workflow_dispatch:
+
   push:
+    branches:
+      - '!update/pre-commit-hooks'
+      - '!dependabot/*'
+      - '**'
 
 jobs:
 
