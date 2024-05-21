@@ -1,15 +1,27 @@
 ---
-name: linux GO build
+name: Build GO CLI
 
 on:                          # yamllint disable-line rule:truthy
   schedule:
-    - cron: '33 08 * * 6'
+    - cron: '34 08 * * 6'
   workflow_dispatch:
   push:
 
 jobs:
 
-  Build_and_AppCast_for_linux:
+  "macOS":
+    runs-on:
+      - self-hosted
+
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: macOS GO Build
+        run: $HOME/github/bin/build_go_macos.sh
+
+  "linux":
     runs-on:
       - self-hosted
 
