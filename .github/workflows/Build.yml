@@ -24,7 +24,7 @@ jobs:
     timeout-minutes: 10
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: macOS GO Build
         run: $HOME/github/bin/build_go_macos.sh
@@ -40,7 +40,7 @@ jobs:
     timeout-minutes: 10
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Linux GO Build
         run: $HOME/github/bin/build_go_linux.sh
