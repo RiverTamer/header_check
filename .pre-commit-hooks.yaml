@@ -5,5 +5,5 @@
   language: golang
   types_or: [objective-c, objective-c++, swift, swiftdeps, java, go, c, c++]
   description: Analyze and update header for copyright and licensing
-  args: [--autodate, --license, arr]
+  args: [--owner "Karl Kraft", --autodate, --license, arr]
   pass_filenames: true
