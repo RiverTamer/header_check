@@ -3,7 +3,7 @@
 //  header_check
 //
 //  Created by Karl Kraft on 12/29/2022
-//  Copyright 2022-2024 Karl Kraft. All rights reserved
+//  Copyright 2022-2025 Karl Kraft. All rights reserved
 //
 
 package main
@@ -12,15 +12,27 @@ import (
 	"bufio"
 	"flag"
 	"fmt"
-	"github.com/go-git/go-git/v5"
-	log "github.com/sirupsen/logrus"
 	"io"
 	"os"
 	"path"
 	"regexp"
 	"strings"
 	"time"
+
+	"github.com/go-git/go-git/v5"
+	log "github.com/sirupsen/logrus"
 )
+
+type FlagStringSlice []string
+
+func (s *FlagStringSlice) String() string {
+	return fmt.Sprint(*s)
+}
+
+func (s *FlagStringSlice) Set(val string) error {
+	*s = append(*s, val)
+	return nil
+}
 
 func allowedTargetNames(filePath string) []string {
 	cwd, _ := os.Getwd()
@@ -54,7 +66,7 @@ func allowedTargetNames(filePath string) []string {
 	return append(a, allowedTargetNames(parent)...)
 }
 
-func analyzeFile(filePath string, license string, autodate bool) bool {
+func analyzeFile(filePath string, license string, autodate bool, owners []string) bool {
 
 	basename := path.Base(filePath)
 
@@ -179,7 +191,7 @@ func analyzeFile(filePath string, license string, autodate bool) bool {
 	// license indicator
 	lineIndex++
 	copyrightLine := lines[lineIndex]
-	validCopyright, correctedLine := isCopyrightValid(copyrightLine, license)
+	validCopyright, correctedLine := isCopyrightValid(copyrightLine, license, owners)
 	if validCopyright != Correct {
 		if !fileReported {
 			log.Warningf("%s", filePath)
@@ -287,44 +299,50 @@ const (
 	Invalid
 )
 
-func isCopyrightValid(theLine string, license string) (CopyrightStatus, string) {
+func isCopyrightValid(theLine string, license string, owners []string) (CopyrightStatus, string) {
 	year, _, _ := time.Now().Date()
 	formattedYear := fmt.Sprintf("%04d", year)
-	singleYearCorrectPattern := "^//  Copyright " + formattedYear + " Karl Kraft. " + license + "(\\.){0,1}$"
-	singleYearExpiredPattern := "^//  Copyright (\\d{4}) Karl Kraft. " + license + "(\\.){0,1}$"
-	rangeCorrectPattern := "^//  Copyright \\d{4}-" + formattedYear + " Karl Kraft. " + license + "(\\.){0,1}$"
-	rangeExpiredPattern := "^//  Copyright (\\d{4})-\\d{4} Karl Kraft. " + license + "(\\.){0,1}$"
+	for _, owner := range owners {
+		singleYearCorrectPattern := "^//  Copyright " + formattedYear + " " + owner + ". " + license + "(\\.){0,1}$"
+		singleYearExpiredPattern := "^//  Copyright (\\d{4}) (" + owner + "). " + license + "(\\.){0,1}$"
+		rangeCorrectPattern := "^//  Copyright \\d{4}-" + formattedYear + " " + owner + ". " + license + "(\\.){0,1}$"
+		rangeExpiredPattern := "^//  Copyright (\\d{4})-\\d{4} (" + owner + "). " + license + "(\\.){0,1}$"
 
-	r, _ := regexp.Compile(singleYearCorrectPattern)
-	if r.MatchString(theLine) {
-		return Correct, ""
+		r, _ := regexp.Compile(singleYearCorrectPattern)
+		if r.MatchString(theLine) {
+			return Correct, ""
+		}
+		r, _ = regexp.Compile(rangeCorrectPattern)
+		if r.MatchString(theLine) {
+			return Correct, ""
+		}
+		r, _ = regexp.Compile(singleYearExpiredPattern)
+		if r.MatchString(theLine) {
+			matches := r.FindStringSubmatch(theLine)
+			return Expired, "//  Copyright " + matches[1] + "-" + formattedYear + " " + owner + ". " + license
+		}
+		r, _ = regexp.Compile(rangeExpiredPattern)
+		if r.MatchString(theLine) {
+			matches := r.FindStringSubmatch(theLine)
+			return Expired, "//  Copyright " + matches[1] + "-" + formattedYear + " " + owner + ". " + license
+		}
 	}
-	r, _ = regexp.Compile(rangeCorrectPattern)
-	if r.MatchString(theLine) {
-		return Correct, ""
-	}
-	r, _ = regexp.Compile(singleYearExpiredPattern)
-	if r.MatchString(theLine) {
-		matches := r.FindStringSubmatch(theLine)
-		return Expired, "//  Copyright " + matches[1] + "-" + formattedYear + " Karl Kraft. " + license
-	}
-	r, _ = regexp.Compile(rangeExpiredPattern)
-	if r.MatchString(theLine) {
-		matches := r.FindStringSubmatch(theLine)
-		return Expired, "//  Copyright " + matches[1] + "-" + formattedYear + " Karl Kraft. " + license
-	}
-
-	return Invalid, "//  Copyright " + formattedYear + " Karl Kraft. " + license
+	return Invalid, "//  Copyright " + formattedYear + " " + owners[0] + ". " + license
 
 }
 
 func main() {
 	//log.Printf("Startup %s(%s) Built: %s", version, revision, builtDate)
+	var owners FlagStringSlice // will hold all values supplied with -owner
+	flag.Var(&owners, "owner", "Owner for Copyrights")
 	license := flag.String("license", "arr", "License mode (arr,apache)")
 	autodate := flag.Bool("autodate", false, "Auto update copyright lines")
 	infoplist := flag.Bool("infoplist", false, "Scan for Info.plist")
 
 	flag.Parse()
+	if owners == nil || len(owners) == 0 {
+		owners = append(owners, "Karl Kraft")
+	}
 	//log.Infof("License is set to %s", *license)
 	var failed bool
 	var licenseString = "All rights reserved"
@@ -334,7 +352,7 @@ func main() {
 	}
 	for _, s := range flag.Args() {
 		//log.Infof("Reading %s", s)
-		failed = analyzeFile(s, licenseString, *autodate) || failed
+		failed = analyzeFile(s, licenseString, *autodate, owners) || failed
 	}
 	if *infoplist {
 		// scan and maybe update
