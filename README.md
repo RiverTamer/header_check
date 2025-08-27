@@ -11,18 +11,17 @@ When configuring there are flags you can pass to header_check:
    rev: v1.5.3
    hooks:
     - id: header_check
-      args: [--license, arr]
+      args: [--owner, "Karl Kraft", --license, arr,--autodate]
 ```
 
 | Flag                    | Description |
 | -----------             | ----------- |
 | --license [arr,apache]  | Sets the expected license in the copyright block. The default is arr (All Rights Reserved.)  apache is for the Apache 2.0 license      |
 | --autodate              | Automatically update the date in copyright headers. |
+| --owner              | This can appear multiple times.  When looking at the copyright line it will ensure that the file is copywritten by one of the listed owners. |
 
 
 ### Future Plans
-
-* If you don't run pre-commit install when you clone a repo the hooks are never run.  There is no way to force clients to run the hooks. At some point we need to apply the hooks at the pull-request level using github actions. [https://pre-commit.ci/](https://pre-commit.ci/)
 
 * Scan for and fix dates in Xcode project Info.plist files
 
