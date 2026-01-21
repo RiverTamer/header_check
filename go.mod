@@ -4,7 +4,7 @@ go 1.24.0
 
 require (
 	github.com/go-git/go-git/v5 v5.16.4
-	github.com/sirupsen/logrus v1.9.3
+	github.com/sirupsen/logrus v1.9.4
 )
 
 require (
