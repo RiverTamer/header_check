@@ -50,7 +50,7 @@ When configuring there are flags you can pass to header_check:
 |------------------------|----------------------------------------------------------------------------------------------------------------------------------------------|
 | --license [arr,apache] | Sets the expected license in the copyright block. The default is arr (All Rights Reserved.)  apache is for the Apache 2.0 license            |
 | --autodate             | Automatically update the date in copyright headers.                                                                                          |
-| --owner                | This can appear multiple times.  When looking at the copyright line it will ensure that the file is copywritten by one of the listed owners. |
+| --owner                | This can appear multiple times.  When looking at the copyright line it will ensure that the file is copyrighted by one of the listed owners. |
 
 There is an additional flag "--infoplist" that should scan for copyrights in Info.plist files and keep them up to date, but this is not currently complete.
 
