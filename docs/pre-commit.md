@@ -25,46 +25,46 @@ You can of course remove non-relevant hooks (e.g. Remove SwiftFormat if your cod
 
 ```yaml
 repos:
--   repo: https://github.com/pre-commit/pre-commit-hooks
+- repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v4.5.0
     hooks:
-    -   id: check-json
-    -   id: check-toml
-    -   id: check-yaml
-    -   id: check-xml
-    -   id: check-added-large-files
-    -   id: check-merge-conflict
-    -   id: check-symlinks
-    -   id: check-byte-order-marker
-    -   id: check-case-conflict
+    - id: check-json
+    - id: check-toml
+    - id: check-yaml
+    - id: check-xml
+    - id: check-added-large-files
+    - id: check-merge-conflict
+    - id: check-symlinks
+    - id: check-byte-order-marker
+    - id: check-case-conflict
 
--   repo: https://github.com/Lucas-C/pre-commit-hooks
+- repo: https://github.com/Lucas-C/pre-commit-hooks
     rev: v1.5.4
     hooks:
-    -   id: forbid-crlf
-    -   id: forbid-tabs
+    - id: forbid-crlf
+    - id: forbid-tabs
         types_or: [objective-c,objective-c++,swift,swiftdeps,java]
 
--   repo: https://github.com/KarlKraft/header_check
+- repo: https://github.com/KarlKraft/header_check
     rev: v1.5.3
     hooks:
-    -   id: header_check
+    - id: header_check
 
--   repo: https://github.com/dnephin/pre-commit-golang
+- repo: https://github.com/dnephin/pre-commit-golang
     rev: v0.5.1
     hooks:
-    -  id: go-fmt
+    - id: go-fmt
 
--   repo: https://github.com/nicklockwood/SwiftFormat
+- repo: https://github.com/nicklockwood/SwiftFormat
     rev: 0.52.11
     hooks:
-     - id: swiftformat
+    - id: swiftformat
 
--   repo: https://github.com/adrienverge/yamllint.git
+- repo: https://github.com/adrienverge/yamllint.git
     rev: v1.33.0
     hooks:
-     - id: yamllint
-       args: [--strict]
+    - id: yamllint
+      args: [--strict]
 
 ```
 
