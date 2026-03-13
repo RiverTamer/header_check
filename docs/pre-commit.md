@@ -96,5 +96,5 @@ git commit --no-verify
 
 ## Useful Links
 
-The label `types_or` defines what file types the hooks runs against.  When not present the default set is used. This uses the `identify` python library.  A list of all the known types can be found [here](https://github.com/pre-commit/identify/blob/main/identify/extensions.py).
+The label `types_or` defines what file types the hook runs against.  When not present the default set is used. This uses the `identify` python library.  A list of all the known types can be found [here](https://github.com/pre-commit/identify/blob/main/identify/extensions.py).
 
