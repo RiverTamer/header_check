@@ -3,7 +3,7 @@
 //  header_check
 //
 //  Created by Karl Kraft on 12/29/2022
-//  Copyright 2022-2025 Karl Kraft. All rights reserved
+//  Copyright 2022-2026 Karl Kraft. All rights reserved
 //
 
 package main
@@ -46,6 +46,10 @@ func allowedTargetNames(filePath string) []string {
 			return a
 		}
 		c, err := r.Config()
+		if err != nil {
+			log.Errorf("Unable to read config (%s)", err.Error())
+			return []string{path.Base(cwd)}
+		}
 		if c.Remotes != nil && c.Remotes["origin"] != nil {
 			for _, urlString := range c.Remotes["origin"].URLs {
 				split := strings.Split(urlString, "/")
