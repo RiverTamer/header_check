@@ -18,7 +18,7 @@ on:                          # yamllint disable-line rule:truthy
 
 jobs:
 
-  "macOS":
+  macOS:
     runs-on:
       - self-hosted
       - macOS
@@ -34,10 +34,28 @@ jobs:
       - name: Mark Completed
         run: touch  ${{ runner.temp }}/Green
 
-  "linux":
+  linux-x86-64:
     runs-on:
       - self-hosted
       - linux
+      - X64
+
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Linux GO Build
+        run: $HOME/github/bin/build_go_linux.sh
+
+      - name: Mark Completed
+        run: touch  ${{ runner.temp }}/Green
+
+  linux-arm64:
+    runs-on:
+      - self-hosted
+      - linux
+      - ARM64
 
     timeout-minutes: 10
 
