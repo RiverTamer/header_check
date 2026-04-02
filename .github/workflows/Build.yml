@@ -18,7 +18,7 @@ on:                          # yamllint disable-line rule:truthy
 
 jobs:
 
-  "macOS":
+  macOS:
     runs-on:
       - self-hosted
       - macOS
@@ -34,10 +34,19 @@ jobs:
       - name: Mark Completed
         run: touch  ${{ runner.temp }}/Green
 
-  "linux":
+  linux:
+    strategy:
+      matrix:
+        include:
+          - arch: x86-64
+            runner: X64
+          - arch: arm64
+            runner: ARM64
+
     runs-on:
       - self-hosted
       - linux
+      - ${{ matrix.runner }}
 
     timeout-minutes: 10
 
