@@ -72,7 +72,7 @@ func allowedTargetNames(filePath string) mapset.Set[string] {
 	parent := path.Dir(filePath)
 	gitPath := parent + "/.git"
 	if _, err := os.Stat(gitPath); err == nil {
-		set.Union(gitOriginNames(cwd, parent))
+		set = set.Union(gitOriginNames(cwd, parent))
 	}
 	if parent == cwd || parent == "." {
 		set.Append(path.Base(cwd))
