@@ -37,7 +37,6 @@ func (s *FlagStringSlice) Set(val string) error {
 
 func gitOriginNames(cwd, parent string) mapset.Set[string] {
 	set := mapset.NewSet[string]()
-	a := []string{path.Base(parent)}
 	r, err := git.PlainOpen(parent)
 	if err != nil {
 		log.Errorf("Could not open local git repository")
@@ -59,15 +58,13 @@ func gitOriginNames(cwd, parent string) mapset.Set[string] {
 			set.Append(lastPath)
 		}
 	}
-	if len(a) == 1 {
-		set.Append(path.Base(cwd))
-	}
 	return set
 }
 
 func allowedTargetNames(filePath string) mapset.Set[string] {
 	set := mapset.NewSet[string]()
 	cwd, _ := os.Getwd()
+	set.Append(path.Base(cwd))
 	parent := path.Dir(filePath)
 	gitPath := parent + "/.git"
 	if _, err := os.Stat(gitPath); err == nil {
