@@ -57,7 +57,6 @@ func gitOriginNames(cwd, parent string) mapset.Set[string] {
 				lastPath = lastPath[0 : len(lastPath)-4]
 			}
 			set.Append(lastPath)
-			return set
 		}
 	}
 	if len(a) == 1 {
