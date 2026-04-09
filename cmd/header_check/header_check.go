@@ -19,6 +19,7 @@ import (
 	"strings"
 	"time"
 
+	mapset "github.com/deckarep/golang-set/v2"
 	"github.com/go-git/go-git/v5"
 	log "github.com/sirupsen/logrus"
 )
@@ -34,40 +35,52 @@ func (s *FlagStringSlice) Set(val string) error {
 	return nil
 }
 
-func allowedTargetNames(filePath string) []string {
+func gitOriginNames(cwd, parent string) mapset.Set[string] {
+	set := mapset.NewSet[string]()
+	a := []string{path.Base(parent)}
+	r, err := git.PlainOpen(parent)
+	if err != nil {
+		log.Errorf("Could not open local git repository")
+		return set
+	}
+	c, err := r.Config()
+	if err != nil {
+		log.Errorf("Unable to read config (%s)", err.Error())
+		set.Append(path.Base(cwd))
+		return set
+	}
+	if c.Remotes != nil && c.Remotes["origin"] != nil {
+		for _, urlString := range c.Remotes["origin"].URLs {
+			split := strings.Split(urlString, "/")
+			lastPath := split[len(split)-1]
+			if strings.HasSuffix(lastPath, ".git") {
+				lastPath = lastPath[0 : len(lastPath)-4]
+			}
+			set.Append(lastPath)
+			return set
+		}
+	}
+	if len(a) == 1 {
+		set.Append(path.Base(cwd))
+	}
+	return set
+}
+
+func allowedTargetNames(filePath string) mapset.Set[string] {
+	set := mapset.NewSet[string]()
 	cwd, _ := os.Getwd()
 	parent := path.Dir(filePath)
-	gitCheck := parent + "/.git"
-	if _, err := os.Stat(gitCheck); err == nil {
-		a := []string{path.Base(parent)}
-		r, err := git.PlainOpen(parent)
-		if err != nil {
-			log.Errorf("Could not open local git respository")
-			return a
-		}
-		c, err := r.Config()
-		if err != nil {
-			log.Errorf("Unable to read config (%s)", err.Error())
-			return []string{path.Base(cwd)}
-		}
-		if c.Remotes != nil && c.Remotes["origin"] != nil {
-			for _, urlString := range c.Remotes["origin"].URLs {
-				split := strings.Split(urlString, "/")
-				lastPath := split[len(split)-1]
-				if strings.HasSuffix(lastPath, ".git") {
-					lastPath = lastPath[0 : len(lastPath)-4]
-				}
-				return append(a, lastPath)
-			}
-		}
-		return a
+	gitPath := parent + "/.git"
+	if _, err := os.Stat(gitPath); err == nil {
+		set.Union(gitOriginNames(cwd, parent))
 	}
 	if parent == cwd || parent == "." {
-		a := []string{path.Base(cwd)}
-		return a
+		set.Append(path.Base(cwd))
+		return set
 	}
-	a := []string{path.Base(parent)}
-	return append(a, allowedTargetNames(parent)...)
+	set.Append(path.Base(parent))
+	set = set.Union(allowedTargetNames(parent))
+	return set
 }
 
 func analyzeFile(filePath string, license string, autodate bool, owners []string) bool {
@@ -140,7 +153,7 @@ func analyzeFile(filePath string, license string, autodate bool, owners []string
 	lineIndex++
 
 	var foundTargetName = false
-	for _, aTargetName := range allowedTargetNames(filePath) {
+	for _, aTargetName := range allowedTargetNames(filePath).ToSlice() {
 		target = "//  " + aTargetName
 		if lines[lineIndex] == target {
 			foundTargetName = true
@@ -154,8 +167,8 @@ func analyzeFile(filePath string, license string, autodate bool, owners []string
 		}
 		log.Warningf("at line %d", lineIndex)
 		log.Warningf("- %s", lines[lineIndex])
-		for _, aTargetName := range allowedTargetNames(filePath) {
-			log.Warningf("+ %s", aTargetName)
+		for _, aTargetName := range allowedTargetNames(filePath).ToSlice() {
+			log.Warningf("+ //  %s", aTargetName)
 		}
 	}
 
