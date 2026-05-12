@@ -3,7 +3,7 @@ module header_check
 go 1.25.0
 
 require (
-	github.com/deckarep/golang-set/v2 v2.8.0
+	github.com/deckarep/golang-set/v2 v2.9.0
 	github.com/go-git/go-git/v5 v5.19.0
 	github.com/sirupsen/logrus v1.9.4
 )
