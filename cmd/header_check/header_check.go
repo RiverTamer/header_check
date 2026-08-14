@@ -37,7 +37,7 @@ func (s *FlagStringSlice) Set(val string) error {
 
 func gitOriginNames(cwd, parent string) mapset.Set[string] {
 	set := mapset.NewSet[string]()
-	r, err := git.PlainOpen(parent)
+	r, err := git.PlainOpenWithOptions(parent, &git.PlainOpenOptions{EnableDotGitCommonDir: true})
 	if err != nil {
 		log.Errorf("Could not open local git repository")
 		return set
@@ -259,7 +259,7 @@ func rewriteFileWithCopyright(filePath string, expiredLine string, replaceLine s
 	}
 	f, err := os.Open(filePath)
 	if err != nil {
-		log.Errorf("Could not open " + filePath + " for reading")
+		log.Errorf("Could not open %s for reading", filePath)
 		return
 	}
 
@@ -269,7 +269,7 @@ func rewriteFileWithCopyright(filePath string, expiredLine string, replaceLine s
 		if err == io.EOF {
 			break
 		} else if err != nil {
-			log.Errorf("Error reading  " + filePath)
+			log.Errorf("Error reading %s", filePath)
 			return
 
 		}
