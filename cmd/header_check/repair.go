@@ -46,6 +46,10 @@ func headerTemplates(filePath, basename, license string, owners []string) []head
 			targetDir = cwd
 		}
 	}
+	if defaultTarget == nil {
+		fallback := path.Base(targetDir)
+		defaultTarget = &fallback
+	}
 
 	return []headerTemplate{
 		blankCommentTemplate(),

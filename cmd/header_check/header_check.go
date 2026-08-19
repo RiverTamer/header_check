@@ -184,7 +184,7 @@ func analyzeFile(filePath string, license string, autodate bool, owners []string
 			fileReported = true
 		}
 		if defaultTarget != nil {
-			target = "+ // " + *defaultTarget
+			target = "//  " + *defaultTarget
 		}
 		logHeaderDiff(repair, lineIndex, lines[lineIndex], target)
 	}
