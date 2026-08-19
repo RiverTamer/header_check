@@ -45,7 +45,7 @@ func headerTemplates(filePath, basename, license string, owners []string) []head
 			targetDir = cwd
 		}
 	}
-	defaultTarget := path.Base(targetDir)
+	defaultTarget := targetNames[0]
 
 	return []headerTemplate{
 		blankCommentTemplate(),
