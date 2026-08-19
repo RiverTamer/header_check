@@ -35,19 +35,20 @@ func (s *FlagStringSlice) Set(val string) error {
 	return nil
 }
 
-func gitOriginNames(cwd, parent string) mapset.Set[string] {
+func gitOriginNames(cwd, parent string) (mapset.Set[string], *string) {
 	set := mapset.NewSet[string]()
 	r, err := git.PlainOpenWithOptions(parent, &git.PlainOpenOptions{EnableDotGitCommonDir: true})
 	if err != nil {
 		log.Errorf("Could not open local git repository")
-		return set
+		return set, nil
 	}
 	c, err := r.Config()
 	if err != nil {
 		log.Errorf("Unable to read config (%s)", err.Error())
 		set.Append(path.Base(cwd))
-		return set
+		return set, nil
 	}
+	var bestOriginName *string
 	if c.Remotes != nil && c.Remotes["origin"] != nil {
 		for _, urlString := range c.Remotes["origin"].URLs {
 			split := strings.Split(urlString, "/")
@@ -56,30 +57,52 @@ func gitOriginNames(cwd, parent string) mapset.Set[string] {
 				lastPath = lastPath[0 : len(lastPath)-4]
 			}
 			set.Append(lastPath)
+			if bestOriginName == nil {
+				bestOriginName = &lastPath
+			}
 		}
 	}
-	return set
+	return set, bestOriginName
 }
 
-func allowedTargetNames(filePath string) mapset.Set[string] {
+func allowedTargetNames(filePath string) (mapset.Set[string], *string) {
 	set := mapset.NewSet[string]()
 	cwd, _ := os.Getwd()
 	set.Append(path.Base(cwd))
 	parent := path.Dir(filePath)
 	gitPath := parent + "/.git"
+
+	var originNames mapset.Set[string]
+	var bestOriginName *string
 	if _, err := os.Stat(gitPath); err == nil {
-		set = set.Union(gitOriginNames(cwd, parent))
+		originNames, bestOriginName = gitOriginNames(cwd, parent)
+		set = set.Union(originNames)
 	}
 	if parent == cwd || parent == "." || parent == filePath {
 		set.Append(path.Base(cwd))
-		return set
+		return set, bestOriginName
 	}
 	set.Append(path.Base(parent))
-	set = set.Union(allowedTargetNames(parent))
-	return set
+	var parentNames mapset.Set[string]
+	var anOriginName *string
+	parentNames, anOriginName = allowedTargetNames(parent)
+	if anOriginName != nil {
+		bestOriginName = anOriginName
+		set.Append(*anOriginName)
+	}
+	set = set.Union(parentNames)
+	return set, bestOriginName
 }
 
-func analyzeFile(filePath string, license string, autodate bool, owners []string) bool {
+func logHeaderDiff(repair bool, lineIndex int, actual string, expected string) {
+	if repair {
+		return
+	}
+	log.Warningf("at line %d", lineIndex)
+	log.Warningf("- %s", actual)
+	log.Warningf("+ %s", expected)
+}
+func analyzeFile(filePath string, license string, autodate bool, owners []string, repair bool) bool {
 
 	basename := path.Base(filePath)
 
@@ -127,9 +150,7 @@ func analyzeFile(filePath string, license string, autodate bool, owners []string
 			log.Warningf("%s", filePath)
 			fileReported = true
 		}
-		log.Warningf("at line %d", lineIndex)
-		log.Warningf("- %s", lines[lineIndex])
-		log.Warningf("+ %s", target)
+		logHeaderDiff(repair, lineIndex, lines[lineIndex], target)
 	}
 
 	// 1 - name of file
@@ -140,16 +161,17 @@ func analyzeFile(filePath string, license string, autodate bool, owners []string
 			log.Warningf("%s", filePath)
 			fileReported = true
 		}
-		log.Warningf("at line %d", lineIndex)
-		log.Warningf("- %s", lines[lineIndex])
-		log.Warningf("+ %s", target)
+		logHeaderDiff(repair, lineIndex, lines[lineIndex], target)
 	}
 
 	// 2 - target name
 	lineIndex++
 
 	var foundTargetName = false
-	for _, aTargetName := range allowedTargetNames(filePath).ToSlice() {
+	var targets mapset.Set[string]
+	var defaultTarget *string
+	targets, defaultTarget = allowedTargetNames(filePath)
+	for _, aTargetName := range targets.ToSlice() {
 		target = "//  " + aTargetName
 		if lines[lineIndex] == target {
 			foundTargetName = true
@@ -161,11 +183,10 @@ func analyzeFile(filePath string, license string, autodate bool, owners []string
 			log.Warningf("%s", filePath)
 			fileReported = true
 		}
-		log.Warningf("at line %d", lineIndex)
-		log.Warningf("- %s", lines[lineIndex])
-		for _, aTargetName := range allowedTargetNames(filePath).ToSlice() {
-			log.Warningf("+ //  %s", aTargetName)
+		if defaultTarget != nil {
+			target = "+ // " + *defaultTarget
 		}
+		logHeaderDiff(repair, lineIndex, lines[lineIndex], target)
 	}
 
 	// 3 - blank line
@@ -176,9 +197,7 @@ func analyzeFile(filePath string, license string, autodate bool, owners []string
 			log.Warningf("%s", filePath)
 			fileReported = true
 		}
-		log.Warningf("at line %d", lineIndex)
-		log.Warningf("- %s", lines[lineIndex])
-		log.Warningf("+ %s", target)
+		logHeaderDiff(repair, lineIndex, lines[lineIndex], target)
 	}
 
 	// 4 - Create by First Last on 01/01/01
@@ -193,9 +212,7 @@ func analyzeFile(filePath string, license string, autodate bool, owners []string
 			log.Warningf("%s", filePath)
 			fileReported = true
 		}
-		log.Warningf("at line %d", lineIndex)
-		log.Warningf("- %s", lines[lineIndex])
-		log.Warningf("+ %s", pattern)
+		logHeaderDiff(repair, lineIndex, lines[lineIndex], pattern)
 	}
 
 	// 5 - Copyright and License
@@ -210,9 +227,7 @@ func analyzeFile(filePath string, license string, autodate bool, owners []string
 			log.Warningf("%s", filePath)
 			fileReported = true
 		}
-		log.Warningf("at line %d", lineIndex)
-		log.Warningf("- %s", lines[lineIndex])
-		log.Warningf("+ %s", correctedLine)
+		logHeaderDiff(repair, lineIndex, lines[lineIndex], correctedLine)
 	}
 
 	// 6 - blank line
@@ -223,9 +238,7 @@ func analyzeFile(filePath string, license string, autodate bool, owners []string
 			log.Warningf("%s", filePath)
 			fileReported = true
 		}
-		log.Warningf("at line %d", lineIndex)
-		log.Warningf("- %s", lines[lineIndex])
-		log.Warningf("+ %s", target)
+		logHeaderDiff(repair, lineIndex, lines[lineIndex], target)
 	}
 
 	// 7 - empty line
@@ -236,9 +249,7 @@ func analyzeFile(filePath string, license string, autodate bool, owners []string
 			log.Warningf("%s", filePath)
 			fileReported = true
 		}
-		log.Warningf("at line %d", lineIndex)
-		log.Warningf("- %s", lines[lineIndex])
-		log.Warningf("+ %s", target)
+		logHeaderDiff(repair, lineIndex, lines[lineIndex], target)
 	}
 
 	if autodate && validCopyright == Expired {
@@ -359,6 +370,7 @@ func main() {
 	}
 	//log.Infof("License is set to %s", *license)
 	var failed bool
+	var repaired bool
 	var licenseString = "All rights reserved"
 
 	if *license == "apache" {
@@ -366,14 +378,15 @@ func main() {
 	}
 	for _, s := range flag.Args() {
 		//log.Infof("Reading %s", s)
-		fileFailed := analyzeFile(s, licenseString, *autodate, owners)
+		fileFailed := analyzeFile(s, licenseString, *autodate, owners, *repair)
 		if fileFailed && *repair {
 			if repairFile(s, licenseString, owners) {
+				repaired = true
 				log.Infof("Repaired header for %s", s)
-				fileFailed = analyzeFile(s, licenseString, *autodate, owners)
+				fileFailed = analyzeFile(s, licenseString, *autodate, owners, false)
 			}
 		}
-		failed = fileFailed || failed
+		failed = fileFailed || failed || repaired
 	}
 	if *infoplist {
 		// scan and maybe update

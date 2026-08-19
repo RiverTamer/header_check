@@ -38,14 +38,14 @@ func blankCommentTemplate() headerTemplate {
 }
 
 func headerTemplates(filePath, basename, license string, owners []string) []headerTemplate {
-	targetNames := allowedTargetNames(filePath).ToSlice()
+	targetNames, defaultTarget := allowedTargetNames(filePath)
+
 	targetDir := path.Dir(filePath)
 	if targetDir == "." || targetDir == "" {
 		if cwd, err := os.Getwd(); err == nil {
 			targetDir = cwd
 		}
 	}
-	defaultTarget := targetNames[0]
 
 	return []headerTemplate{
 		blankCommentTemplate(),
@@ -55,14 +55,14 @@ func headerTemplates(filePath, basename, license string, owners []string) []head
 		},
 		{
 			match: func(line string) bool {
-				for _, aTargetName := range targetNames {
+				for _, aTargetName := range targetNames.ToSlice() {
 					if line == "//  "+aTargetName {
 						return true
 					}
 				}
 				return false
 			},
-			generate: func() string { return "//  " + defaultTarget },
+			generate: func() string { return "//  " + *defaultTarget },
 		},
 		blankCommentTemplate(),
 		{
