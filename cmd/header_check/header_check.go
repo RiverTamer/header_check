@@ -70,7 +70,7 @@ func allowedTargetNames(filePath string) mapset.Set[string] {
 	if _, err := os.Stat(gitPath); err == nil {
 		set = set.Union(gitOriginNames(cwd, parent))
 	}
-	if parent == cwd || parent == "." {
+	if parent == cwd || parent == "." || parent == filePath {
 		set.Append(path.Base(cwd))
 		return set
 	}
@@ -351,6 +351,7 @@ func main() {
 	license := flag.String("license", "arr", "License mode (arr,apache)")
 	autodate := flag.Bool("autodate", false, "Auto update copyright lines")
 	infoplist := flag.Bool("infoplist", false, "Scan for Info.plist")
+	repair := flag.Bool("repair", false, "Attempt to repair invalid or missing headers")
 
 	flag.Parse()
 	if owners == nil || len(owners) == 0 {
@@ -365,7 +366,14 @@ func main() {
 	}
 	for _, s := range flag.Args() {
 		//log.Infof("Reading %s", s)
-		failed = analyzeFile(s, licenseString, *autodate, owners) || failed
+		fileFailed := analyzeFile(s, licenseString, *autodate, owners)
+		if fileFailed && *repair {
+			if repairFile(s, licenseString, owners) {
+				log.Infof("Repaired header for %s", s)
+				fileFailed = analyzeFile(s, licenseString, *autodate, owners)
+			}
+		}
+		failed = fileFailed || failed
 	}
 	if *infoplist {
 		// scan and maybe update
