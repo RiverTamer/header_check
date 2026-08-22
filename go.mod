@@ -5,7 +5,7 @@ go 1.25.0
 require (
 	github.com/deckarep/golang-set/v2 v2.9.0
 	github.com/go-git/go-git/v5 v5.19.2
-	github.com/sirupsen/logrus v1.9.4
+	github.com/sirupsen/logrus v1.10.1
 )
 
 require (
