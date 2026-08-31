@@ -28,7 +28,7 @@ type headerTemplate struct {
 	generate func() string
 }
 
-var createdByPattern = regexp.MustCompile("^//  Created by .+ on \\d{1,2}/\\d{1,2}/(\\d{2}|\\d{4})(\\.){0,1}$")
+var createdByPattern = regexp.MustCompile(`^//  Created by .+ on \d{1,2}/\d{1,2}/(\d{2}|\d{4})(\.){0,1}$`)
 
 func blankCommentTemplate() headerTemplate {
 	return headerTemplate{
@@ -116,11 +116,15 @@ func repairFile(filePath, license string, owners []string) bool {
 			break
 		} else if readErr != nil {
 			log.Errorf("Error reading %s", filePath)
-			f.Close()
+			if closeErr := f.Close(); closeErr != nil {
+				log.Warningf("Could not close %s: %s", filePath, closeErr)
+			}
 			return false
 		}
 	}
-	f.Close()
+	if closeErr := f.Close(); closeErr != nil {
+		log.Warningf("Could not close %s: %s", filePath, closeErr)
+	}
 
 	if len(originalLines) == 0 {
 		return false
@@ -170,8 +174,12 @@ func repairFile(filePath, license string, owners []string) bool {
 	for _, aLine := range result {
 		if _, writeErr := output.WriteString(aLine); writeErr != nil {
 			log.Errorf("Error writing repaired header for %s", filePath)
-			output.Close()
-			os.Remove(output.Name())
+			if closeErr := output.Close(); closeErr != nil {
+				log.Warningf("Could not close %s: %s", output.Name(), closeErr)
+			}
+			if removeErr := os.Remove(output.Name()); removeErr != nil {
+				log.Warningf("Could not remove %s: %s", output.Name(), removeErr)
+			}
 			return false
 		}
 	}

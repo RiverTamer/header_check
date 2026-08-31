@@ -10,6 +10,7 @@ package main
 
 import (
 	"bufio"
+	"errors"
 	"flag"
 	"fmt"
 	"io"
@@ -53,9 +54,7 @@ func gitOriginNames(cwd, parent string) (mapset.Set[string], *string) {
 		for _, urlString := range c.Remotes["origin"].URLs {
 			split := strings.Split(urlString, "/")
 			lastPath := split[len(split)-1]
-			if strings.HasSuffix(lastPath, ".git") {
-				lastPath = lastPath[0 : len(lastPath)-4]
-			}
+			lastPath = strings.TrimSuffix(lastPath, ".git")
 			set.Append(lastPath)
 			if bestOriginName == nil {
 				bestOriginName = &lastPath
@@ -102,6 +101,7 @@ func logHeaderDiff(repair bool, lineIndex int, actual string, expected string) {
 	log.Warningf("- %s", actual)
 	log.Warningf("+ %s", expected)
 }
+
 func analyzeFile(filePath string, license string, autodate bool, owners []string, repair bool) bool {
 
 	basename := path.Base(filePath)
@@ -110,11 +110,13 @@ func analyzeFile(filePath string, license string, autodate bool, owners []string
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer file.Close()
 
 	buffer := make([]byte, 1024)
 	numberRead, err := file.Read(buffer)
-	if err != nil && err != io.EOF {
+	if closeErr := file.Close(); closeErr != nil {
+		log.Warningf("Could not close %s: %s", filePath, closeErr)
+	}
+	if err != nil && !errors.Is(err, io.EOF) {
 		log.Errorf("Could not open for reading: %s", filePath)
 		log.Fatal(err)
 	}
@@ -131,8 +133,8 @@ func analyzeFile(filePath string, license string, autodate bool, owners []string
 	minLines := 7
 
 	if basename == "Package.swift" {
-		minLines = minLines + 2
-		lineIndex = lineIndex + 2
+		minLines += 2
+		lineIndex += 2
 	}
 	if len(lines) < minLines {
 		log.Warningf("%s", filePath)
@@ -260,8 +262,8 @@ func analyzeFile(filePath string, license string, autodate bool, owners []string
 }
 
 func rewriteFileWithCopyright(filePath string, expiredLine string, replaceLine string) {
-	expiredLine = expiredLine + "\n"
-	replaceLine = replaceLine + "\n"
+	expiredLine += "\n"
+	replaceLine += "\n"
 	dir := path.Dir(filePath)
 	output, err := os.CreateTemp(dir, "_header_check_*.tmp")
 	if err != nil {
@@ -356,19 +358,17 @@ func isCopyrightValid(theLine string, license string, owners []string) (Copyrigh
 }
 
 func main() {
-	//log.Printf("Startup %s(%s) Built: %s", version, revision, builtDate)
 	var owners FlagStringSlice // will hold all values supplied with -owner
 	flag.Var(&owners, "owner", "Owner for Copyrights")
 	license := flag.String("license", "arr", "License mode (arr,apache)")
 	autodate := flag.Bool("autodate", false, "Auto update copyright lines")
-	infoplist := flag.Bool("infoplist", false, "Scan for Info.plist")
 	repair := flag.Bool("repair", false, "Attempt to repair invalid or missing headers")
 
 	flag.Parse()
-	if owners == nil || len(owners) == 0 {
+	if len(owners) == 0 {
 		owners = append(owners, "Karl Kraft")
 	}
-	//log.Infof("License is set to %s", *license)
+	// log.Infof("License is set to %s", *license)
 	var failed bool
 	var repaired bool
 	var licenseString = "All rights reserved"
@@ -377,7 +377,7 @@ func main() {
 		licenseString = "Licensed under Apache License, Version 2.0"
 	}
 	for _, s := range flag.Args() {
-		//log.Infof("Reading %s", s)
+		// log.Infof("Reading %s", s)
 		fileFailed := analyzeFile(s, licenseString, *autodate, owners, *repair)
 		if fileFailed && *repair {
 			if repairFile(s, licenseString, owners) {
@@ -388,12 +388,8 @@ func main() {
 		}
 		failed = fileFailed || failed || repaired
 	}
-	if *infoplist {
-		// scan and maybe update
-	}
 	if failed {
 		os.Exit(-1)
-	} else {
-		os.Exit(0)
 	}
+	os.Exit(0)
 }
