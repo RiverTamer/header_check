@@ -1,0 +1,32 @@
+---
+name: Lint
+permissions:
+  contents: read
+
+on:                          # yamllint disable-line rule:truthy
+  push:
+    branches:
+      - '**'
+    tags:
+      - '**'
+
+jobs:
+
+  golangci-lint:
+    runs-on:
+      - self-hosted
+      - linux
+      - X64
+
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: golangci-lint
+        uses: golangci/golangci-lint-action@v9
+        with:
+          version: latest
+
+      - name: Mark Completed
+        run: touch  ${{ runner.temp }}/Green
