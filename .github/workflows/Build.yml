@@ -28,7 +28,7 @@ jobs:
       - uses: actions/checkout@v7
 
       - name: macOS GO Build
-        run: $HOME/github/bin/build_go_macos.sh
+        run: $HOME/github/bin/build_go.sh
 
       - name: Mark Completed
         run: touch  ${{ runner.temp }}/Green
@@ -53,7 +53,7 @@ jobs:
       - uses: actions/checkout@v7
 
       - name: Linux GO Build
-        run: $HOME/github/bin/build_go_linux.sh
+        run: $HOME/github/bin/build_go.sh
 
       - name: Mark Completed
         run: touch  ${{ runner.temp }}/Green
