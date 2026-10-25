@@ -8,10 +8,3 @@ updates:
       interval: "weekly"
       day: "saturday"
       time: "11:09"
-
-  - package-ecosystem: "gomod"
-    directory: "/"
-    schedule:
-      interval: "weekly"
-      day: "saturday"
-      time: "11:29"
